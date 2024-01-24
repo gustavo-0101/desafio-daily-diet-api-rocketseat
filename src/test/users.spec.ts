@@ -17,11 +17,16 @@ describe('Users routes', () => {
     execSync('npm run knex migrate:latest')
   })
 
-  it('should be able to list all users', async () => {
-    const listUsersResponse = await request(app.server)
-      .get('/users')
-      .expect(200)
+  it('should be able to create a user', async () => {
+    const response = await request(app.server)
+      .post('/users')
+      .send({ name: 'New user', email: 'example@example.com' })
+      .expect(201)
 
-    expect(listUsersResponse.body.users).toEqual([])
+    const cookies = response.get('Set-Cookie')
+
+    expect(cookies).toEqual(
+      expect.arrayContaining([expect.stringContaining('sessionId')]),
+    )
   })
 })
