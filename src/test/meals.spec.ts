@@ -89,10 +89,10 @@ describe('Meals routes', () => {
       .set('Cookie', cookies)
       .expect(200)
 
-    const mealId = mealsResponse.body.meals[0].id
+    const id = mealsResponse.body.meals[0].id
 
     const mealResponse = await request(app.server)
-      .get(`/meals/${mealId}`)
+      .get(`/meals/${id}`)
       .set('Cookie', cookies)
       .expect(200)
 
@@ -151,6 +151,113 @@ describe('Meals routes', () => {
         description: 'Descrição de teste modificação',
         is_diet: 0,
       }),
+    })
+  })
+
+  it('should be able to delete a meal', async () => {
+    const userResponse = await request(app.server)
+      .post('/users')
+      .send({ name: 'Teste', email: 'teste@teste.com' })
+      .expect(201)
+
+    const cookies = userResponse.get('Set-Cookie')
+
+    await request(app.server)
+      .post('/meals')
+      .set('Cookie', cookies)
+      .send({
+        name: 'Teste',
+        description: 'Descrição de teste',
+        isOnDiet: true,
+      })
+      .expect(201)
+
+    const mealsResponse = await request(app.server)
+      .get('/meals')
+      .set('Cookie', cookies)
+      .expect(200)
+
+    const id = mealsResponse.body.meals[0].id
+
+    await request(app.server)
+      .delete(`/meals/${id}`)
+      .set('Cookie', userResponse.get('Set-Cookie'))
+      .expect(204)
+  })
+
+  it('should be able to get metrics from a user', async () => {
+    const userResponse = await request(app.server)
+      .post('/users')
+      .send({ name: 'Teste', email: 'teste@teste.com' })
+      .expect(201)
+
+    const cookies = userResponse.get('Set-Cookie')
+
+    const updatedDate = new Date('2023-01-24T08:00:00')
+
+    await request(app.server)
+      .post('/meals')
+      .set('Cookie', cookies)
+      .send({
+        name: 'Teste 1',
+        description: 'Descrição de teste 1',
+        isOnDiet: true,
+        updated_at: `${updatedDate.getUTCFullYear()}-${(updatedDate.getUTCMonth() + 1).toString().padStart(2, '0')}-${updatedDate.getUTCDate().toString().padStart(2, '0')} ${updatedDate.getUTCHours().toString().padStart(2, '0')}:${updatedDate.getUTCMinutes().toString().padStart(2, '0')}:${updatedDate.getUTCSeconds().toString().padStart(2, '0')}`,
+      })
+      .expect(201)
+
+    await request(app.server)
+      .post('/meals')
+      .set('Cookie', cookies)
+      .send({
+        name: 'Teste 2',
+        description: 'Descrição de teste 2',
+        isOnDiet: false,
+        updated_at: `${updatedDate.getUTCFullYear()}-${(updatedDate.getUTCMonth() + 1).toString().padStart(2, '0')}-${(updatedDate.getUTCDate() + 1).toString().padStart(2, '0')} ${updatedDate.getUTCHours().toString().padStart(2, '0')}:${updatedDate.getUTCMinutes().toString().padStart(2, '0')}:${updatedDate.getUTCSeconds().toString().padStart(2, '0')}`,
+      })
+      .expect(201)
+
+    await request(app.server)
+      .post('/meals')
+      .set('Cookie', cookies)
+      .send({
+        name: 'Teste 3',
+        description: 'Descrição de teste 3',
+        isOnDiet: true,
+        updated_at: `${updatedDate.getUTCFullYear()}-${(updatedDate.getUTCMonth() + 1).toString().padStart(2, '0')}-${(updatedDate.getUTCDate() + 2).toString().padStart(2, '0')} ${updatedDate.getUTCHours().toString().padStart(2, '0')}:${updatedDate.getUTCMinutes().toString().padStart(2, '0')}:${updatedDate.getUTCSeconds().toString().padStart(2, '0')}`,
+      })
+      .expect(201)
+
+    await request(app.server)
+      .post('/meals')
+      .set('Cookie', cookies)
+      .send({
+        name: 'Teste 4',
+        description: 'Descrição de teste 4',
+        isOnDiet: true,
+        updated_at: `${updatedDate.getUTCFullYear()}-${(updatedDate.getUTCMonth() + 1).toString().padStart(2, '0')}-${(updatedDate.getUTCDate() + 3).toString().padStart(2, '0')} ${updatedDate.getUTCHours().toString().padStart(2, '0')}:${updatedDate.getUTCMinutes().toString().padStart(2, '0')}:${updatedDate.getUTCSeconds().toString().padStart(2, '0')}`,
+      })
+
+    await request(app.server)
+      .post('/meals')
+      .set('Cookie', cookies)
+      .send({
+        name: 'Teste 5',
+        description: 'Descrição de teste 5',
+        isOnDiet: true,
+        updated_at: `${updatedDate.getUTCFullYear()}-${(updatedDate.getUTCMonth() + 1).toString().padStart(2, '0')}-${(updatedDate.getUTCDate() + 4).toString().padStart(2, '0')} ${updatedDate.getUTCHours().toString().padStart(2, '0')}:${updatedDate.getUTCMinutes().toString().padStart(2, '0')}:${updatedDate.getUTCSeconds().toString().padStart(2, '0')}`,
+      })
+
+    const metricsResponse = await request(app.server)
+      .get('/meals/metrics')
+      .set('Cookie', cookies)
+      .expect(200)
+
+    expect(metricsResponse.body).toEqual({
+      totalMeals: 5,
+      totalDietMeals: 4,
+      totalNotDietMeals: 1,
+      bestOnDietSequence: 3,
     })
   })
 })

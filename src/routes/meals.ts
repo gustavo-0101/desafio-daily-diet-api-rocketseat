@@ -35,7 +35,9 @@ export async function mealsRoutes(app: FastifyInstance) {
     '/',
     { preHandler: [checkSessionIdExists] },
     async (request, reply) => {
-      const meals = await knex('meals').where({ user_id: request.user?.id })
+      const meals = await knex('meals')
+        .where({ user_id: request.user?.id })
+        .orderBy('created_at', 'desc')
 
       return reply.send({ meals })
     },
@@ -99,6 +101,73 @@ export async function mealsRoutes(app: FastifyInstance) {
         })
 
       return reply.status(204).send()
+    },
+  )
+  app.delete(
+    '/:mealId',
+    { preHandler: [checkSessionIdExists] },
+    async (request, reply) => {
+      const paramsSchema = z.object({ mealId: z.string().uuid() })
+
+      const { mealId } = paramsSchema.parse(request.params)
+
+      const meal = await knex('meals')
+        .where({ id: mealId, user_id: request.user?.id })
+        .first()
+
+      if (!meal) {
+        return reply.status(404).send({ error: 'Meal not found' })
+      }
+
+      await knex('meals').where({ id: mealId }).delete()
+
+      return reply.status(204).send()
+    },
+  )
+
+  app.get(
+    '/metrics',
+    { preHandler: [checkSessionIdExists] },
+    async (request, reply) => {
+      const totalDietMeals = await knex('meals')
+        .where({ user_id: request.user?.id, is_diet: true })
+        .count('id', { as: 'total' })
+        .first()
+
+      const totalNotDietMeals = await knex('meals')
+        .where({ user_id: request.user?.id, is_diet: false })
+        .count('id', { as: 'total' })
+        .first()
+
+      const totalMeals = await knex('meals')
+        .where({
+          user_id: request.user?.id,
+        })
+        .orderBy('created_at', 'desc')
+
+      const { bestOnDietSequence } = totalMeals.reduce(
+        (accumulator, meal) => {
+          if (meal.is_diet) {
+            accumulator.currentSequence += 1
+          } else {
+            accumulator.currentSequence = 0
+          }
+
+          if (accumulator.currentSequence > accumulator.bestOnDietSequence) {
+            accumulator.bestOnDietSequence = accumulator.currentSequence
+          }
+
+          return accumulator
+        },
+        { bestOnDietSequence: 0, currentSequence: 0 },
+      )
+
+      return reply.send({
+        totalMeals: totalMeals.length,
+        totalDietMeals: totalDietMeals?.total,
+        totalNotDietMeals: totalNotDietMeals?.total,
+        bestOnDietSequence,
+      })
     },
   )
 }
