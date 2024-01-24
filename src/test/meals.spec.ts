@@ -17,11 +17,20 @@ describe('Meals routes', () => {
     execSync('npm run knex migrate:latest')
   })
 
-  it('should be able to list all meals', async () => {
-    const listMealsResponse = await request(app.server)
-      .get('/meals')
-      .expect(200)
+  it('should be able to create a new meal', async () => {
+    const userResponse = await request(app.server)
+      .post('/users')
+      .send({ name: 'Test Name', email: 'example@example.com' })
+      .expect(201)
 
-    expect(listMealsResponse.body.meals).toEqual([])
+    await request(app.server)
+      .post('/meals')
+      .set('Cookie', userResponse.get('Set-Cookie'))
+      .send({
+        name: 'Test meal',
+        description: 'Meal created to test',
+        isOnDiet: true,
+      })
+      .expect(201)
   })
 })
