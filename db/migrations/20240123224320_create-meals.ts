@@ -1,17 +1,17 @@
 import type { Knex } from 'knex'
 
 export async function up(knex: Knex): Promise<void> {
-  await knex.schema.createTable('meals', (table) => {
+  return knex.schema.createTable('meals', (table) => {
     table.uuid('id').primary()
     table.uuid('user_id').references('users.id').notNullable()
-    table.text('name').notNullable()
-    table.text('description').notNullable()
+    table.string('name').notNullable()
+    table.string('description').notNullable()
     table.boolean('is_diet').notNullable()
-    table.timestamp('created_at').defaultTo(knex.fn.now()).notNullable()
-    table.timestamp('updated_at').defaultTo(knex.fn.now()).notNullable()
+    table.date('date').notNullable()
+    table.timestamps(true, true)
   })
 }
 
 export async function down(knex: Knex): Promise<void> {
-  await knex.schema.dropTable('meals')
+  return knex.schema.dropTable('meals')
 }
